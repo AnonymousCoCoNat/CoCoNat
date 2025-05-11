@@ -7,8 +7,9 @@ How can we efficiently handle multiple related queries to improve the accuracy a
 Named Entity Recognition (NER) is a crucial component in natural language processing, 
 yet accurate and consistent entity recognition across multiple sentences remains a challenge:
 independent tagging misses cross-sentence cues, whereas large knowledge bases and LLMs are costly to employ.
+
 In this paper, we propose CoCoNat (Context-aware Collective Named-entity Tagging), a lightweight, training-free overlay that enhances any pre-trained NER backbone.
-CoCoNat first flags low-confidence or label-conflicting entities, thereby isolating a small subset of ``hard'' queries.
+CoCoNat first flags low-confidence or label-conflicting entities, thereby isolating a small subset of "hard" queries.
 It then forms context-coherent groups by linking queries through exact entity overlap or embedding similarity,
 and re-applies the same tagger to each group after a confidence-aware, gradual concatenation.
 Experimental evaluations demonstrate that this collective strategy substantially enhances both accuracy and consistency in entity recognition.
