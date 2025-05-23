@@ -14,7 +14,8 @@ The implementation requires the following libraries.
 - evaluate==0.4.3  
 - numpy==1.26.4 
 - seqeval==1.2.2 
-- torch==2.3.0 
+- torch==2.3.0
+- tqdm==4.67.1
 - transformers==4.49.0 
 
 # Datasets
