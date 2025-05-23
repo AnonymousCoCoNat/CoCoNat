@@ -10,8 +10,12 @@ In this paper, we propose CoCoNat (Context-aware Collective Named-entity Tagging
 
 # Prerequisites
 The implementation requires the following libraries.
-
-...
+- datasets==3.4.1  
+- evaluate==0.4.3  
+- numpy==1.26.4 
+- seqeval==1.2.2 
+- torch==2.3.0 
+- transformers==4.49.0 
 
 # Datasets
 The datasets used in our experiments are available at
