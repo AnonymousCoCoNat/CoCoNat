@@ -19,24 +19,15 @@ The implementation requires the following libraries.
 - transformers==4.49.0 
 
 # Datasets
-The datasets used in our experiments are available at
-[CoNLL-2003](https://www.clips.uantwerpen.be/conll2003/ner/), 
-[OntoNotes 5.0](https://catalog.ldc.upenn.edu/LDC2013T19), 
-[WNUT-2017](https://noisy-text.github.io/2017/emerging-rare-entities.html), 
-[FIN](https://aclanthology.org/U15-1010/), 
-[BioNLP-2004](https://www.ncbi.nlm.nih.gov/research/bionlp/Data/), 
-[BC5CDR](https://biocreative.bioinformatics.udel.edu/tasks/biocreative-v/track-3-cdr/),
-[MIT Movie](http://groups.csail.mit.edu/sls/), 
-[MIT Restaurant](http://groups.csail.mit.edu/sls/).
+| Dataset        | Domain      | #Train | #Valid | #Test | #Tag | Source                                                                               |
+| -------------- | ----------- | -----: | -----: | ----: | ---: | ------------------------------------------------------------------------------------ |
+| CoNLL-2003     | News        | 14,041 |  3,250 | 3,453 |    4 | [LINK](https://www.clips.uantwerpen.be/conll2003/ner/)                               |
+| OntoNotes 5.0  | Mixed       | 59,924 |  8,528 | 8,262 |   18 | [LINK](https://catalog.ldc.upenn.edu/LDC2013T19)                                     |
+| WNUT-2017      | Twitter     |  2,395 |  1,009 | 1,287 |    6 | [LINK](https://noisy-text.github.io/2017/emerging-rare-entities.html)                |
+| FIN            | Finance     |  1,018 |    150 |   305 |    4 | [LINK](https://aclanthology.org/U15-1010/)                                           |
+| BioNLP-2004    | Biomedical  | 16,619 |  1,927 | 3,856 |    5 | [LINK](https://www.ncbi.nlm.nih.gov/research/bionlp/Data/)                           |
+| BC5CDR         | Biomedical  |  5,228 |  5,330 | 5,865 |    2 | [LINK](https://biocreative.bioinformatics.udel.edu/tasks/biocreative-v/track-3-cdr/) |
+| MIT Movie      | Movie       |  6,816 |  1,000 | 1,953 |   12 | [LINK](http://groups.csail.mit.edu/sls/)                                             |
+| MIT Restaurant | FAQ queries |  6,900 |    760 | 1,521 |    8 | [LINK](http://groups.csail.mit.edu/sls/)                                             |
 
-| Dataset        | Domain      | #Train | #Valid | #Test | #Tag |
-| -------------- | ----------- | -----: | ----: | ----: | ---: |
-| CoNLL-2003     | News        | 14,041 | 3,250 | 3,453 |    4 |
-| OntoNotes 5.0  | Mixed       | 59,924 | 8,528 | 8,262 |   18 |
-| WNUT-2017      | Twitter     |  2,395 | 1,009 | 1,287 |    6 |
-| FIN            | Finance     |  1,018 |   150 |   305 |    4 |
-| BioNLP-2004    | Biomedical  | 16,619 | 1,927 | 3,856 |    5 |
-| BC5CDR         | Biomedical  |  5,228 | 5,330 | 5,865 |    2 |
-| MIT Movie      | Movie       |  6,816 | 1,000 | 1,953 |   12 |
-| MIT Restaurant | FAQ queries |  6,900 |   760 | 1,521 |    8 |
 
