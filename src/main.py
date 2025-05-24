@@ -48,7 +48,7 @@ CASED: bool = False         # If True, grouping is performed case‑sensitively
 ###############################################################################
 #                            Model & dataset paths                            #
 ###############################################################################
-TRAIN: bool = False  # Toggle train/test
+TRAIN: bool = True  # Toggle train/test
 DATASET_NAME = "conll2003"
 DATASET_LOC = "conll2003"
 MODEL_NAME = "DeBERTa-v3-base"
