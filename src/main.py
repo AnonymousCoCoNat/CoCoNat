@@ -48,7 +48,7 @@ CASED: bool = False         # If True, grouping is performed case‑sensitively
 ###############################################################################
 #                            Model & dataset paths                            #
 ###############################################################################
-TRAIN: bool = True  # Toggle train/test
+TRAIN: bool = False  # Toggle train/test
 DATASET_NAME = "conll2003"
 DATASET_LOC = "conll2003"
 MODEL_NAME = "DeBERTa-v3-base"
@@ -160,18 +160,6 @@ else:
     )
 
 
-def aggregate_group(
-    token_indices: List[int],
-    logits: np.ndarray
-) -> Dict[str, float]:
-    """Return the most confident label among the provided sub‑tokens."""
-    probs = np.vstack([np.exp(l - l.max()) / np.exp(l - l.max()).sum() for l in logits[token_indices]])
-    argmaxes = probs[np.arange(len(probs)), probs.argmax(1)]
-    best_row = int(argmaxes.argmax())
-    best_lab = ID2LABEL[int(probs[best_row].argmax())]
-    return {"label": best_lab, "score": float(argmaxes[best_row])}
-
-
 def process_group(
     subset_input_ids: List[List[int]],
     groups: List[List[int]],
@@ -226,7 +214,7 @@ def aggregate_word_predictions(
     tokens: List[str],
     logits: np.ndarray
 ) -> List[Dict[str, str | float]]:
-    """Convert sub‑token logits to word‑level predictions."""
+    """Convert sub‑token logits to span‑level predictions."""
     mapping = tokenizer(tokens, is_split_into_words=True).word_ids()
     spans, cur = [], None
     for i, w in enumerate(mapping):
@@ -244,16 +232,19 @@ def aggregate_word_predictions(
 
     results = []
     for w_id, idxs in spans:
-        agg = aggregate_group(idxs, logits)
-        results.append({"text": tokens[w_id], "label": agg["label"], "score": agg["score"]})
+        probs = np.vstack([np.exp(l) / np.exp(l).sum() for l in logits[idxs]])
+        argmaxes = probs[np.arange(len(probs)), probs.argmax(1)]
+        best_row = argmaxes.argmax()
+        best_lab = ID2LABEL[probs[best_row].argmax()]
+        results.append({"text": tokens[w_id], "label": best_lab, "score": argmaxes[best_row]})
     return results
 
 
 def hard_query_detector(
-    queries_with_entities: List[Tuple[int, str, List[dict]]],
+    queries_with_entities: List[Tuple[int, List[dict]]],
     threshold_l: float,
     threshold_c: float,
-) -> Tuple[List[Tuple[int, str, List[dict]]], Set[str]]:
+) -> Tuple[List[Tuple[int, List[dict]]], Set[str]]:
     """
     Identify hard entities and return the queries that contain them.
 
@@ -266,7 +257,7 @@ def hard_query_detector(
     # Collect statistics
     label_counts: Dict[str, Dict[str, int]] = defaultdict(dict)
     low_conf: Set[str] = set()
-    for _, _, ents in queries_with_entities:
+    for _, ents in queries_with_entities:
         for ent in ents:
             form, lab, conf = ent.values()
             label_counts.setdefault(form, defaultdict(int))[lab] += 1
@@ -289,18 +280,18 @@ def hard_query_detector(
                     '<', '>', '?', '|', '{', '}', '[', ']', "`", '--'}
     hard_entities -= punctuations
 
-    hard_queries = [(idx, q, ents) for idx, q, ents in queries_with_entities
+    hard_queries = [(idx, ents) for idx, ents in queries_with_entities
                     if hard_entities & {e["text"] for e in ents}]
     return hard_queries, hard_entities
 
 
 def cluster_queries(
-    queries_with_entities: List[Tuple[int, str, List[dict]]],
+    queries_with_entities: List[Tuple[int, List[dict]]],
     hard_entities: Set[str],
 ) -> Dict[str, List[int]]:
     """Form initial groups anchored by surface‑matched hard entities."""
     clusters: Dict[str, List[int]] = {e.lower() if not CASED else e: [] for e in hard_entities}
-    for idx, _, ents in queries_with_entities:
+    for idx, ents in queries_with_entities:
         ents_in_q = {e["text"] for e in ents} if CASED else {e["text"].lower() for e in ents}
         for ent in ents_in_q & clusters.keys():
             clusters[ent].append(idx)
@@ -311,21 +302,20 @@ def main():
     """Execute the full CoCoNat pipeline on the test split."""
 
     device = next(model.parameters()).device
-    subset = test_dataset
 
     # ---------------- First pass -------------------------------------------
-    first_logits = trainer.predict(subset).predictions
+    first_logits = trainer.predict(test_dataset).predictions
 
-    queries_with_entities: List[Tuple[int, str, List[dict]]] = []
+    queries_with_entities: List[Tuple[int, List[dict]]] = []
     naive_preds: Dict[int, List[str]] = {}
-    for idx, example in enumerate(subset):
-        toks = example["tokens"]
-        ents = aggregate_word_predictions(toks, first_logits[idx])
-        queries_with_entities.append((idx, " ".join(toks), ents))
+    tokens_list = test_dataset["tokens"]
+    for idx, (toks, log) in enumerate(zip(tokens_list, first_logits)):
+        ents = aggregate_word_predictions(toks, log)
+        queries_with_entities.append((idx, ents))
         naive_preds[idx] = [e["label"] for e in ents]
 
     # ---------------- Detect hard queries ----------------------------------
-    conf_thresh, _, _ = auto_threshold_sigma(queries_with_entities, KAPPA)
+    conf_thresh, _, _ = auto_threshold(queries_with_entities, KAPPA)
     hard_qs, hard_ents = hard_query_detector(queries_with_entities, conf_thresh, DELTA)
 
     # ---------------- Grouping & ordering ----------------------------------
@@ -339,7 +329,7 @@ def main():
     second_logits: Dict[int, np.ndarray] = {}
     for start in tqdm(range(0, len(all_groups), batch_size)):
         batch = all_groups[start:start + batch_size]
-        batch_pred = process_group(subset["input_ids"], batch, model, device)
+        batch_pred = process_group(test_dataset["input_ids"], batch, model, device)
         for grp in batch_pred:
             for q_idx, log in grp.items():
                 if q_idx not in second_logits:
@@ -359,12 +349,12 @@ def main():
 
     # ---------------- Final span predictions -------------------------------
     final_preds: Dict[int, List[str]] = naive_preds.copy()
-    for idx, log in second_logits.items():
-        ents = aggregate_word_predictions(subset[idx]["tokens"], log)
-        final_preds[idx] = [e["label"] for e in ents]
+    for q_idx, log in second_logits.items():
+        ents = aggregate_word_predictions(tokens_list[q_idx], log)
+        final_preds[q_idx] = [e["label"] for e in ents]
 
     # ---------------- Evaluation -------------------------------------------
-    gold = [[ID2LABEL[t] for t in ex["ner_tags"]] for ex in subset]
+    gold = [[ID2LABEL[t] for t in ex] for ex in test_dataset["ner_tags"]]
     naive = list(naive_preds.values())
     refined = list(final_preds.values())
 

@@ -11,15 +11,15 @@ from typing import List, Tuple, Dict
 import numpy as np
 
 
-def auto_threshold_sigma(
-    queries_with_entities: List[Tuple[int, str, List[dict]]],
+def auto_threshold(
+    queries_with_entities: List[Tuple[int, List[dict]]],
     kappa: float = 2.0,
 ) -> Tuple[float, float, float]:
     """
     Derive a data‑dependent confidence threshold.
     """
     confidences: list[float] = [ent["score"]
-                                for _, _, ents in queries_with_entities
+                                for _, ents in queries_with_entities
                                 for ent in ents]
     arr = np.asarray(confidences)
     mean_conf = float(arr.mean())
