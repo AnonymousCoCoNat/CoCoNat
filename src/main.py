@@ -160,56 +160,6 @@ else:
     )
 
 
-def process_group(
-    subset_input_ids: List[List[int]],
-    groups: List[List[int]],
-    ner: torch.nn.Module,
-    device: torch.device,
-    max_length: int = 512,
-) -> List[Dict[int, np.ndarray]]:
-    """Run the backbone once per group batch and slice logits per query.
-
-    Each group is a list of query indices. We concatenate the queries inside
-    the group, optionally inserting a period token between them, forward the
-    sequence through ner, then slice the resulting logits back into the
-    original per‑query segments.
-    """
-    CLS, SEP, PAD = tokenizer.cls_token_id, tokenizer.sep_token_id, tokenizer.pad_token_id
-    DOT = tokenizer.convert_tokens_to_ids('.')
-
-    batch_ids, offsets_per_group = [], []
-    for g in groups:
-        concat: List[int] = []
-        offsets = [0]
-        for q in g:
-            body = subset_input_ids[q][1:-1]  # strip CLS/SEP
-            concat.extend(body)
-            if DELIMITER:
-                concat.append(DOT)
-            offsets.append(len(concat))
-        seq = [CLS] + concat[: max_length - 2] + [SEP]
-        batch_ids.append(seq)
-        offsets_per_group.append(offsets)
-
-    # Pad batch
-    max_len = max(len(s) for s in batch_ids)
-    ids_tensor = torch.tensor([s + [PAD] * (max_len - len(s)) for s in batch_ids], device=device)
-    mask_tensor = torch.tensor([[1] * len(s) + [0] * (max_len - len(s)) for s in batch_ids], device=device)
-
-    with torch.no_grad():
-        logits = ner(input_ids=ids_tensor, attention_mask=mask_tensor).logits.cpu().numpy()
-
-    outputs: List[Dict[int, np.ndarray]] = []
-    for b_idx, g in enumerate(groups):
-        slc = {}
-        offs = offsets_per_group[b_idx]
-        for i, q in enumerate(g):
-            s, e = offs[i] + 1, offs[i + 1] + 1  # skip CLS
-            slc[q] = logits[b_idx][s:e]
-        outputs.append(slc)
-    return outputs
-
-
 def aggregate_word_predictions(
     tokens: List[str],
     logits: np.ndarray
@@ -296,6 +246,57 @@ def cluster_queries(
         for ent in ents_in_q & clusters.keys():
             clusters[ent].append(idx)
     return {k: v for k, v in clusters.items() if len(v) >= MIN_GROUP_SIZE}
+
+
+def process_group(
+    subset_input_ids: List[List[int]],
+    groups: List[List[int]],
+    ner: torch.nn.Module,
+    device: torch.device,
+    max_length: int = 512,
+) -> List[Dict[int, np.ndarray]]:
+    """
+    Run the backbone once per group batch and slice logits per query.
+
+    Each group is a list of query indices. We concatenate the queries inside
+    the group, optionally inserting a period token between them, forward the
+    sequence through ner, then slice the resulting logits back into the
+    original per‑query segments.
+    """
+    CLS, SEP, PAD = tokenizer.cls_token_id, tokenizer.sep_token_id, tokenizer.pad_token_id
+    DOT = tokenizer.convert_tokens_to_ids('.')
+
+    batch_ids, offsets_per_group = [], []
+    for g in groups:
+        concat: List[int] = []
+        offsets = [0]
+        for q in g:
+            body = subset_input_ids[q][1:-1]  # strip CLS/SEP
+            concat.extend(body)
+            if DELIMITER:
+                concat.append(DOT)
+            offsets.append(len(concat))
+        seq = [CLS] + concat[: max_length - 2] + [SEP]
+        batch_ids.append(seq)
+        offsets_per_group.append(offsets)
+
+    # Pad batch
+    max_len = max(len(s) for s in batch_ids)
+    ids_tensor = torch.tensor([s + [PAD] * (max_len - len(s)) for s in batch_ids], device=device)
+    mask_tensor = torch.tensor([[1] * len(s) + [0] * (max_len - len(s)) for s in batch_ids], device=device)
+
+    with torch.no_grad():
+        logits = ner(input_ids=ids_tensor, attention_mask=mask_tensor).logits.cpu().numpy()
+
+    outputs: List[Dict[int, np.ndarray]] = []
+    for b_idx, g in enumerate(groups):
+        slc = {}
+        offs = offsets_per_group[b_idx]
+        for i, q in enumerate(g):
+            s, e = offs[i] + 1, offs[i + 1] + 1  # skip CLS
+            slc[q] = logits[b_idx][s:e]
+        outputs.append(slc)
+    return outputs
 
 
 def main():
