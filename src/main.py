@@ -34,17 +34,17 @@ from utils import *
 ###############################################################################
 #                               Hyperparameters                               #
 ###############################################################################
-KAPPA: float = 8.0          # Low‑confidence threshold
-DELTA: float = 0.9          # Inconsistency threshold
-AGGREGATION: str = "MEAN"   # {MEAN, MAX, PRODUCT}
+KAPPA: float = 8.0         # Low‑confidence threshold
+DELTA: float = 0.9         # Inconsistency threshold
+AGGREGATION: str = "MEAN"  # {MEAN, MAX, PRODUCT}
 
-MAX_GROUP_SIZE: int = 10    # Maximum queries per group after sub‑division
-MIN_GROUP_SIZE: int = 1     # Minimum queries per group to keep
-INCONS_TOLERANCE: int = 2   # Required number of conflicting labels to trigger
-UPPER_BOUND: int = 80       # Ignore entities that occur extremely often
-LOWER_BOUND: int = 0        # Ignore entities that occur too rarely
-ADD_SEPARATOR: bool = True  # Insert a '.' delimiter between queries
-CASED: bool = False         # If True, grouping is performed case‑sensitively
+INCONS_TOLERANCE: int = 2  # Required number of conflicting labels to trigger
+MAX_GROUP_SIZE: int = 10   # Maximum queries per group after sub‑division
+MIN_GROUP_SIZE: int = 1    # Minimum queries per group to keep
+UPPER_BOUND: int = 80      # Ignore entities that occur extremely often
+LOWER_BOUND: int = 0       # Ignore entities that occur too rarely
+DELIMITER: bool = True     # Insert a '.' delimiter between queries
+CASED: bool = False        # If True, grouping is performed case‑sensitively
 ###############################################################################
 #                            Model & dataset paths                            #
 ###############################################################################
@@ -184,7 +184,7 @@ def process_group(
         for q in g:
             body = subset_input_ids[q][1:-1]  # strip CLS/SEP
             concat.extend(body)
-            if ADD_SEPARATOR:
+            if DELIMITER:
                 concat.append(DOT)
             offsets.append(len(concat))
         seq = [CLS] + concat[: max_length - 2] + [SEP]
