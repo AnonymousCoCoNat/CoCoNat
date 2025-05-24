@@ -36,7 +36,7 @@ from utils import *
 ###############################################################################
 KAPPA: float = 8.0         # Low‑confidence threshold
 DELTA: float = 0.9         # Inconsistency threshold
-AGGREGATION: str = "MEAN"  # {MEAN, MAX, PRODUCT}
+AGGREGATION: str = "MEAN"  # {MEAN, MAX}
 
 INCONS_TOLERANCE: int = 2  # Required number of conflicting labels to trigger
 MAX_GROUP_SIZE: int = 10   # Maximum queries per group after sub‑division
@@ -340,8 +340,6 @@ def main():
                         second_logits[q_idx] += log
                     elif AGGREGATION == "MAX":
                         second_logits[q_idx] = np.maximum(second_logits[q_idx], log)
-                    else:  # PRODUCT
-                        second_logits[q_idx] *= log
 
     # Pad CLS/SEP logits for token alignment
     pad = np.zeros((1, len(ID2LABEL)))
