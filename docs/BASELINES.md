@@ -4,8 +4,6 @@ The baseline layer separates **execution** from **evaluation**. Official systems
 in their own environments, but every result must cross the same strict word-offset
 boundary before the common evaluator scores it.
 
-## Why official systems are bridged
-
 ScdNER, PromptNER, GPT-NER, IRRA, and ReasoningNER are not interchangeable prompts.
 Their papers define different supervision, retrieval, and reasoning procedures. This
 repository therefore does not imitate those names with one generic LLM call. Use the
@@ -26,9 +24,6 @@ Relevant primary sources:
 - ReasoningNER official repository: <https://github.com/HuiResearch/ReasoningIE>
 - Hugging Face token-classification task guide:
   <https://huggingface.co/docs/transformers/v4.49.0/en/tasks/token_classification>
-
-Pin the exact upstream commit actually used. A moving default branch is not sufficient
-provenance.
 
 ## Common prediction format
 
@@ -89,10 +84,6 @@ Use this path when an official program has already produced output:
     LOC: LOC
     MISC: MISC
 ```
-
-Accuracy is recomputed by the common evaluator. Inference latency is `null` because a
-saved prediction file cannot recover the original runtime. Supplying file-read time as
-model latency would be misleading.
 
 ## External command
 
@@ -190,8 +181,7 @@ Local instruction model:
 ```
 
 The demonstration selector draws distinct training sentences independently for each
-entity type, then deduplicates their union. It fails if a type has fewer than five
-eligible training sentences.
+entity type, then deduplicates their union.
 
 Hosted instruction model:
 
@@ -209,16 +199,5 @@ Hosted instruction model:
 
 The command requires `--allow-api`. It uses deterministic temperature-zero Chat
 Completions, requests JSON output, stores response metadata, and does not retry an
-authentication/permission failure. Confirm current model access and pricing before a
-large run.
+authentication/permission failure.
 
-## Completeness
-
-List the paper's required names under top-level `required_baselines`. During development,
-disabled entries are recorded as coverage gaps and the run finishes with
-`completed_with_baseline_gaps`. For final measurement, add `--require-all`, which rejects
-the configuration before creating a run if a required method is missing or disabled.
-
-Regime labels are part of the result. Accuracy across full-supervision, zero-shot, and
-five-shot settings should be presented as a deployment trade-off, not as if all rows used
-the same supervision.
