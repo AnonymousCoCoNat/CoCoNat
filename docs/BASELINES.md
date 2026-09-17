@@ -1,6 +1,6 @@
 # Recent-baseline integration
 
-The baseline layer separates **execution** from **evaluation**. Official systems may run
+The baseline layer separates execution from evaluation. Official systems may run
 in their own environments, but every result must cross the same strict word-offset
 boundary before the common evaluator scores it.
 
