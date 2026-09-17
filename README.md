@@ -226,12 +226,3 @@ coconat audit-export \
   --cases outputs/*/RUN/main/transition_cases.jsonl \
   --sample-size 100 --seed 42 --output outputs/manual-c-to-w.csv
 ```
-
-Fill the `reason` column with one of the categories recorded in the adjacent manifest,
-then summarize only the annotated rows:
-
-```bash
-coconat audit-summarize --input outputs/manual-c-to-w.csv \
-  --output outputs/manual-c-to-w-summary.json
-```
-
