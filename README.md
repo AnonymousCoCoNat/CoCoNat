@@ -23,7 +23,7 @@ The package supports the following experiments:
 | Dataset characteristics | `main` | hard-span rate, repeated-hard rate, F1 headroom |
 | Error propagation | `main` | W-to-C, C-to-C, W-to-W, C-to-W and new-only spans |
 | Detector/grouping/order/fusion ablations | `ablation` | CSV plus settings per variant |
-| Kappa/delta sensitivity | `sensitivity` | sweep CSV and publication-ready PDF/PNG plot |
+| Kappa/delta sensitivity | `sensitivity` | sweep CSV and PDF/PNG plot |
 | Validation tuning and fixed transfer | `tune,main` | full validation grid and fixed `(9, 0.8)` comparison |
 | Temperature calibration | `calibration` | validation-fitted temperature, ECE, F1, hard-set Jaccard |
 | Length and label controls | `main` / `merge` | natural and label-balanced strata |
