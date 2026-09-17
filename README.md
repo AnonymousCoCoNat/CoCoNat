@@ -55,7 +55,7 @@ Inspect the environment without downloading a model:
 coconat doctor
 ```
 
-## Verify the installation first
+## Verify the installation
 
 The fastest end-to-end check runs every analysis on generated data with a deterministic
 toy backend:
@@ -64,9 +64,6 @@ toy backend:
 coconat demo --output outputs/demo
 ```
 
-These numbers are for software validation only. They are marked `synthetic: true` and
-cannot be merged into publication tables unless `--allow-synthetic` is given explicitly.
-
 Run the complete unit and local tiny-Transformer tests with:
 
 ```bash
@@ -74,8 +71,7 @@ python -m unittest discover -s tests -v
 ruff check src tests
 ```
 
-The Transformer tests construct random tiny BERT and Longformer checkpoints locally;
-they do not download research checkpoints or claim benchmark quality.
+The Transformer tests construct random tiny BERT and Longformer checkpoints locally.
 
 ## Data contract
 
