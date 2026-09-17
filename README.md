@@ -1,6 +1,6 @@
 # CoCoNat
 
-Reproducible Python implementation of **CoCoNat: Training-Free Cross-Query Context
+Python implementation of **CoCoNat: Training-Free Cross-Query Context
 Conditioning for Named Entity Recognition**, with experiment and evaluation tools.
 
 CoCoNat is an inference-time overlay for an already trained NER backbone. It detects
@@ -28,8 +28,6 @@ The suite supports the following experiments and analyses:
 | Temperature calibration | `calibration` | validation-fitted temperature, ECE, F1, hard-set Jaccard |
 | Length and label controls | `main` / `merge` | natural and label-balanced strata |
 | Manual C-to-W analysis | `audit-export`, `audit-summarize` | unannotated sample and human-coded summary |
-
-The exact definitions and denominators are in [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
 ## Installation
 
@@ -165,8 +163,7 @@ coconat merge --runs outputs/conll/RUN outputs/ontonotes/RUN outputs/wnut/RUN \
 ```
 
 The merge creates dataset-characteristic, fixed-setting, calibration, baseline, pooled
-length, natural-label, and label-balanced summaries. It refuses unfinished and synthetic
-runs by default.
+length, natural-label, and label-balanced summaries.
 
 ## Recent baselines
 
@@ -203,9 +200,7 @@ coconat run --config data/conll2003/experiment.yaml \
   --tasks baselines --allow-api --require-all
 ```
 
-API calls may be billable. The key is never accepted in YAML or written to manifests.
-
-## External baseline round trip
+## External baselines
 
 Export token-stable, gold-blind inputs:
 
@@ -221,10 +216,6 @@ coconat convert-predictions --config data/conll2003/experiment.yaml \
   --input external/raw-predictions.jsonl --format bio \
   --output external/predictions.jsonl
 ```
-
-The converter requires every prediction row to echo the original token list exactly,
-requires complete ID coverage, and rejects character spans that do not coincide with
-token boundaries. It never snaps output to gold.
 
 ## Manual error audit
 
@@ -244,28 +235,3 @@ coconat audit-summarize --input outputs/manual-c-to-w.csv \
   --output outputs/manual-c-to-w-summary.json
 ```
 
-The software never invents manual labels or percentages.
-
-## Run artifacts
-
-Every run records:
-
-- resolved configuration, environment, model identity, split fingerprints, and status;
-- first/final predictions and exact entity metrics;
-- detector decisions, evidence-group packing traces, and clustering metadata;
-- component timing from three measured runs after one warm-up by default;
-- machine-readable CSV/JSON plus generated LaTeX tables and sensitivity figures;
-- explicit baseline coverage gaps and timing scopes.
-
-Model loading is recorded separately from resident inference. Imported predictions have
-no fabricated latency. External subprocess timing includes process startup and model
-loading and therefore must not be compared to resident-model timing without reporting
-that difference.
-
-## Reproducibility documentation
-
-- [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) maps experiments to commands and output files.
-- [docs/PROTOCOL.md](docs/PROTOCOL.md) defines metrics and edge cases.
-- [docs/BASELINES.md](docs/BASELINES.md) documents baseline integration.
-- [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) describes software verification,
-  required external assets, and measurement limitations.
