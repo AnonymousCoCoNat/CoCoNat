@@ -1,4 +1,4 @@
-# Revision experiment guide
+# Experiment guide
 
 ## One-dataset end-to-end sequence
 
@@ -96,14 +96,3 @@ output directory. The supported resident adapters are:
 
 Do not point `hf` at a generic language-model checkpoint at inference time. The adapter
 verifies the full BIO head and fails rather than treating `LABEL_0` as O.
-
-## Recommended final-run checks
-
-1. Confirm `validation_sha256` and `test_sha256` differ.
-2. Confirm `synthetic` is false in every manifest.
-3. Confirm every required baseline has `status: completed`.
-4. Confirm resolved commits/checkpoints and hardware match the experimental setting.
-5. Compare timing only within compatible `timing_scope` values.
-6. Inspect all `invalid_offsets`, parse failures, omitted group members, and null ECEs.
-7. Complete and archive the 100-case human audit.
-8. Re-run from a clean checkout using the recorded commands and commit.
