@@ -99,10 +99,6 @@ official schema is safer. The normalized JSONL form uses half-open **word** offs
 {"id":"q1","tokens":["Acme","opened","in","Paris","."],"doc_id":"d1","spans":[{"start":0,"end":1,"label":"ORG"},{"start":3,"end":4,"label":"LOC"}]}
 ```
 
-Gold labels remain in evaluation files, but inference methods receive immutable `Query`
-objects containing only ID, tokens, and optional document ID. Exports for external
-systems omit gold by default.
-
 ## Train a backbone
 
 Edit the generated `data/conll2003/experiment.yaml`, then run:
@@ -140,8 +136,7 @@ coconat run --config data/conll2003/experiment.yaml \
 ```
 
 `tune` searches only the validation split. Its selected `(kappa, delta)` is then used on
-test. Each invocation creates a new timestamped run directory, so prior measurements are
-never overwritten. To execute all eight dataset configurations sequentially:
+test. To execute all eight dataset configurations sequentially:
 
 ```bash
 coconat matrix \
@@ -157,9 +152,6 @@ coconat merge --runs outputs/conll/RUN outputs/ontonotes/RUN outputs/wnut/RUN \
   outputs/mit_movie/RUN outputs/mit_restaurant/RUN \
   --output outputs/merged
 ```
-
-The merge creates dataset-characteristic, fixed-setting, calibration, baseline, pooled
-length, natural-label, and label-balanced summaries.
 
 ## Recent baselines
 
@@ -186,7 +178,7 @@ coconat run --config data/conll2003/experiment.yaml --tasks baselines
 ```
 
 Use `--require-all` in the final reproduction run. It fails if a required method is
-disabled or missing instead of silently producing an incomplete table.
+disabled or missing.
 
 Hosted inference is intentionally opt-in:
 
