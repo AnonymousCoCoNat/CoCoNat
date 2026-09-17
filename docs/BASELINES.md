@@ -121,10 +121,6 @@ It is invoked as an argument list with `shell=False`; placeholders may occur any
 an argument. On failure, run the configured command directly to inspect the official
 program's own stderr.
 
-External-command timing includes interpreter/process startup and model loading on every
-measured invocation. Report that scope. For a resident-server or in-process comparison,
-write a native `Backend` adapter so that loading occurs once outside the timed region.
-
 ## Native adapter configuration
 
 Hugging Face token classifier:
