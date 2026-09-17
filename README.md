@@ -27,7 +27,7 @@ The package supports the following experiments:
 | Validation tuning and fixed transfer | `tune,main` | full validation grid and fixed `(9, 0.8)` comparison |
 | Temperature calibration | `calibration` | validation-fitted temperature, ECE, F1, hard-set Jaccard |
 | Length and label controls | `main` / `merge` | natural and label-balanced strata |
-| Manual C-to-W analysis | `audit-export`, `audit-summarize` | unannotated sample and human-coded summary |
+| Manual C-to-W analysis | `audit-export` | unannotated sample |
 
 ## Installation
 
