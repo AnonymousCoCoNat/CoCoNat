@@ -14,9 +14,9 @@ is synthetic and its outputs are labelled as such.
 
 ## What is covered
 
-The suite supports the following experiments and analyses:
+The package supports the following experiments:
 
-| Paper analysis | Command/task | Main outputs |
+| Experiment | Command | Outputs |
 | --- | --- | --- |
 | Backbone vs. CoCoNat | `main` | exact entity P/R/F1, predictions, latency |
 | Recent NER paradigms | `baselines` | accuracy, timing scope, provenance, coverage gaps |
