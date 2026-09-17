@@ -1,0 +1,60 @@
+# Copy this file, verify every path and label, then pin all remote revisions.
+dataset:
+  name: conll2003
+  format: jsonl
+  labels: [PER, ORG, LOC, MISC]
+  train: ../data/conll2003/train.jsonl
+  validation: ../data/conll2003/validation.jsonl
+  test: ../data/conll2003/test.jsonl
+
+model:
+  kind: hf
+  checkpoint: ../checkpoints/conll2003/deberta-v3-base
+  device: auto
+  max_length: 512
+  batch_size: 8
+
+training:
+  base_checkpoint: microsoft/deberta-v3-base
+  # Add an immutable model-hub revision for the final run.
+  revision: null
+  epochs: 3
+  batch_size: 8
+  learning_rate: 0.00002
+  gradient_accumulation_steps: 1
+  context_mode: sentence
+  seed: 42
+  fp16: false
+  bf16: false
+
+pipeline:
+  kappa: 9.0
+  delta: 0.8
+  detector: both
+  grouping: entity
+  ordering: gradual
+  aggregation: mean
+  case_sensitive: true
+  max_group_size: 10
+  seed: 42
+  n_clusters: null
+  gmm_threshold: 0.2
+
+experiments:
+  grid_kappas: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  grid_deltas: [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  sensitivity_kappas: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  sensitivity_deltas: [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  fixed:
+    kappa: 9.0
+    delta: 0.8
+  repeats: 3
+  warmups: 1
+  random_repeats: 5
+  embedding_ablation: true
+
+# Merge verified entries from recent_baselines.example.yaml here.
+required_baselines: []
+baselines: []
+
+output_dir: ../outputs/conll2003/deberta-v3-base

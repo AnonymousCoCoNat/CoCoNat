@@ -1,0 +1,110 @@
+# This is a mergeable registry fragment, not a standalone experiment config.
+# Disabled entries make missing assets explicit. Enable only after verifying paths,
+# regimes, label maps, and immutable source/checkpoint revisions.
+required_baselines:
+  - Longformer-base-4096
+  - ScdNER
+  - GLiNER-large
+  - PromptNER
+  - GPT-NER
+  - IRRA
+  - ReasoningNER
+  - Llama-3.1-8B-Instruct-common-prompt
+  - GPT-4o-mini-2024-07-18-common-prompt
+
+baselines:
+  - name: Longformer-base-4096
+    kind: hf
+    family: long context
+    regime: full supervision
+    enabled: false
+    checkpoint: ../checkpoints/DATASET/longformer-base-4096
+    max_length: 4096
+    batch_size: 2
+    device: auto
+    context_mode: document
+
+  - name: ScdNER
+    kind: external_predictions
+    family: document context
+    regime: full supervision
+    enabled: false
+    prediction_path: ../external/scdner/DATASET.predictions.jsonl
+    source_manifest: ../external/scdner/source.json
+    label_map: {}
+
+  - name: GLiNER-large
+    kind: gliner
+    family: generalist encoder
+    regime: zero-shot
+    enabled: false
+    checkpoint: urchade/gliner_large-v2.1
+    threshold: 0.5
+    device: auto
+    # Model-facing names map to dataset labels. Replace this example per dataset.
+    label_map:
+      person: PER
+      organization: ORG
+      location: LOC
+      miscellaneous: MISC
+
+  - name: PromptNER
+    kind: external_predictions
+    family: prompt learning
+    regime: official five-shot training setting
+    enabled: false
+    prediction_path: ../external/promptner/DATASET.predictions.jsonl
+    source_manifest: ../external/promptner/source.json
+    label_map: {}
+
+  - name: GPT-NER
+    kind: external_predictions
+    family: generative NER
+    regime: five-shot per type
+    enabled: false
+    prediction_path: ../external/gptner/DATASET.predictions.jsonl
+    source_manifest: ../external/gptner/source.json
+    label_map: {}
+
+  - name: IRRA
+    kind: external_predictions
+    family: retrieval augmented
+    regime: released zero-shot setting
+    enabled: false
+    prediction_path: ../external/irra/DATASET.predictions.jsonl
+    source_manifest: ../external/irra/source.json
+    label_map: {}
+
+  - name: ReasoningNER
+    kind: external_predictions
+    family: reasoning NER
+    regime: released zero-shot setting
+    enabled: false
+    prediction_path: ../external/reasoningner/DATASET.predictions.jsonl
+    source_manifest: ../external/reasoningner/source.json
+    label_map: {}
+
+  - name: Llama-3.1-8B-Instruct-common-prompt
+    kind: local_llm
+    family: instruction LLM
+    regime: five-shot per type
+    enabled: false
+    checkpoint: meta-llama/Meta-Llama-3.1-8B-Instruct
+    revision: null
+    shots_per_type: 5
+    seed: 42
+    device: auto
+    max_length: 8192
+    max_new_tokens: 1024
+
+  - name: GPT-4o-mini-2024-07-18-common-prompt
+    kind: hosted_llm
+    family: instruction LLM
+    regime: five-shot per type
+    enabled: false
+    checkpoint: gpt-4o-mini-2024-07-18
+    shots_per_type: 5
+    seed: 42
+    api_key_env: OPENAI_API_KEY
+    max_new_tokens: 1024
+    timeout: 120

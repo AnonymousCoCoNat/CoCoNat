@@ -1,0 +1,8 @@
+{
+  "method": "REPLACE_WITH_METHOD_NAME",
+  "source_url": "REPLACE_WITH_OFFICIAL_URL",
+  "source_revision": "REPLACE_WITH_FULL_COMMIT_OR_IMMUTABLE_TAG",
+  "checkpoint": "REPLACE_WITH_EXACT_CHECKPOINT_AND_REVISION",
+  "supervision": "REPLACE_WITH_EXACT_TRAINING_OR_TRANSFER_REGIME",
+  "notes": "Record prompts, retrieval indices, dataset-specific flags, and local patches."
+}

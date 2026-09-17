@@ -1,99 +1,271 @@
 # CoCoNat
-This repository is the official implementation of "CoCoNat: Leveraging Cross-Query Context to Enhance Named Entity Recognition." 
 
+Reproducible Python implementation of **CoCoNat: Training-Free Cross-Query Context
+Conditioning for Named Entity Recognition**, with experiment and evaluation tools.
 
-## Abstract
-How can we efficiently handle multiple related queries to improve the accuracy and consistency of entity recognition? Named Entity Recognition (NER) is a crucial component in natural language processing, yet accurate and consistent entity recognition across multiple sentences remains a challenge: independent tagging misses cross-sentence cues, whereas large knowledge bases and LLMs are costly to employ.
+CoCoNat is an inference-time overlay for an already trained NER backbone. It detects
+uncertain or inconsistent predicted mentions, forms small evidence groups among the
+hard queries, applies the same backbone to each concatenated group, and combines the
+span-wise second-pass scores. It does not update the backbone during CoCoNat inference.
 
-In this paper, we propose CoCoNat (Context-aware Collective Named-entity Tagging), a lightweight, training-free overlay that enhances pre-trained NER backbones. CoCoNat first isolates a small subset of "hard" queries, significantly reducing the computational cost. A lightweight grouping step then merges only mutually useful queries, which suppresses off-topic noise. Finally, CoCoNat re-applies the backbone within each group and fuses predictions to acheive higher precision and label consistency. Experimental evaluations demonstrate that our collective strategy substantially improves the accuracy of existing NER backbones, yielding up to 9.4%p higher precision and 4.4%p higher F1. Moreover, its model-agnostic design ensures seamless integration with off-the-shelf NER models without retraining, facilitating cost-effective upgrades to the latest architectures.
+The package provides a command-line interface, explicit token/span contracts,
+validation-only model selection, measured result files, and tests. The included demo
+is synthetic and its outputs are labelled as such.
 
+## What is covered
 
-## Prerequisites
-The implementation requires the following libraries.
-- datasets==3.4.1  
-- evaluate==0.4.3  
-- numpy==1.26.4 
-- seqeval==1.2.2 
-- torch==2.3.0
-- tqdm==4.67.1
-- transformers==4.49.0
+The suite supports the following experiments and analyses:
 
-## Quick start
-The script `main.py` can (1) download data, (2) fine-tune a backbone NER model, and (3) run evaluation with/without the CoCoNat refinement.
+| Paper analysis | Command/task | Main outputs |
+| --- | --- | --- |
+| Backbone vs. CoCoNat | `main` | exact entity P/R/F1, predictions, latency |
+| Recent NER paradigms | `baselines` | accuracy, timing scope, provenance, coverage gaps |
+| Dataset characteristics | `main` | hard-span rate, repeated-hard rate, F1 headroom |
+| Error propagation | `main` | W-to-C, C-to-C, W-to-W, C-to-W and new-only spans |
+| Detector/grouping/order/fusion ablations | `ablation` | CSV plus settings per variant |
+| Kappa/delta sensitivity | `sensitivity` | sweep CSV and publication-ready PDF/PNG plot |
+| Validation tuning and fixed transfer | `tune,main` | full validation grid and fixed `(9, 0.8)` comparison |
+| Temperature calibration | `calibration` | validation-fitted temperature, ECE, F1, hard-set Jaccard |
+| Length and label controls | `main` / `merge` | natural and label-balanced strata |
+| Manual C-to-W analysis | `audit-export`, `audit-summarize` | unannotated sample and human-coded summary |
 
-```bash
-# Runs training + evaluation on CoNLL-2003 with DeBERTa-v3-base (defaults in main.py)
-python main.py
-```
+The exact definitions and denominators are in [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
-On first run, the dataset will be **auto-downloaded** via Hugging Face Datasets and cached under `./output/conll2003`.
+## Installation
 
-## Fine-tuning
-
-Open `main.py` and check the **Model & dataset paths** block:
-
-```python
-TRAIN = True
-DATASET_NAME = "conll2003"
-DATASET_LOC  = "conll2003"
-
-MODEL_NAME = "DeBERTa-v3-base"
-MODEL_CHECKPOINT = "microsoft/deberta-v3-base"
-
-LOCAL_FOLDER = f"./output/{DATASET_NAME}"
-LOCAL_FOLDER_MODEL = f"{LOCAL_FOLDER}/{MODEL_NAME}"
-```
-
-Then run:
+Python 3.10 or newer is required. Create an isolated environment and install the package
+from the repository root:
 
 ```bash
-python main.py
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[hf,analysis]"
 ```
 
-Artifacts (checkpoints, logs) will be saved under:
-
-```
-./output/<DATASET_NAME>/<MODEL_NAME>/
-```
-
-To adjust training settings (epochs, LR, batch size, etc.), edit the `TrainingArguments` in `main.py`.
-
-
-## Evaluation
-
-1. Set a valid checkpoint path:
-
-```python
-LOCAL_CKPT = "./output/conll2003/DeBERTa-v3-base/checkpoint-5000"
-```
-
-2. Switch to inference mode:
-
-```python
-TRAIN = False
-```
-
-3. Run:
+Install PyTorch using the command recommended for the local CUDA version before the
+last command when GPU acceleration is required. Optional native adapters are separate
+extras because their dependency constraints can conflict:
 
 ```bash
-python main.py
+python -m pip install -e ".[gliner]"   # or .[flair], .[spacy]
 ```
 
-At the end, the script prints **Precision / Recall / F1** for:
+Inspect the environment without downloading a model:
 
-* the backbone alone, and
-* **backbone + CoCoNat** (after second-pass grouping/aggregation).
+```bash
+coconat doctor
+```
 
+## Verify the installation first
 
+The fastest end-to-end check runs every analysis on generated data with a deterministic
+toy backend:
 
-## Tips & Troubleshooting
+```bash
+coconat demo --output outputs/demo
+```
 
-* **GPU usage**: Transformers/Trainer will use GPU automatically if available.
-* **OOM issues**: Lower `per_device_train_batch_size` or `model_max_length`.
-* **Different model**: Change `MODEL_CHECKPOINT` (e.g., `bert-base-cased`, `xlm-roberta-base`).
+These numbers are for software validation only. They are marked `synthetic: true` and
+cannot be merged into publication tables unless `--allow-synthetic` is given explicitly.
 
+Run the complete unit and local tiny-Transformer tests with:
 
+```bash
+python -m unittest discover -s tests -v
+ruff check src tests
+```
 
+The Transformer tests construct random tiny BERT and Longformer checkpoints locally;
+they do not download research checkpoints or claim benchmark quality.
 
+## Data contract
 
+Local CoNLL input is whitespace-separated, with one token per line, a BIO/BIOES/BILOU
+tag column, and a blank line between queries. `-DOCSTART-` creates document boundaries.
+Set `--token-column` and `--tag-column` when the source has multiple columns.
 
+Normalize a dataset and generate a runnable configuration:
+
+```bash
+coconat prepare \
+  --name conll2003 \
+  --format conll \
+  --train raw/conll2003/train.txt \
+  --validation raw/conll2003/valid.txt \
+  --test raw/conll2003/test.txt \
+  --labels PER,ORG,LOC,MISC \
+  --output data/conll2003
+```
+
+Omit `--labels` only when every official type occurs in the training split. Declaring the
+official schema is safer. The normalized JSONL form uses half-open **word** offsets:
+
+```json
+{"id":"q1","tokens":["Acme","opened","in","Paris","."],"doc_id":"d1","spans":[{"start":0,"end":1,"label":"ORG"},{"start":3,"end":4,"label":"LOC"}]}
+```
+
+Gold labels remain in evaluation files, but inference methods receive immutable `Query`
+objects containing only ID, tokens, and optional document ID. Exports for external
+systems omit gold by default.
+
+## Train a backbone
+
+Edit the generated `data/conll2003/experiment.yaml`, then run:
+
+```bash
+coconat train --config data/conll2003/experiment.yaml
+```
+
+Training uses only the configured train and validation splits. The saved checkpoint has
+an explicit BIO head and a `training_manifest.json` containing split fingerprints,
+versions, and selection details. CoCoNat itself remains training-free; this command is
+only for producing the supervised backbone used by the paper.
+
+Longformer document-context training is enabled with:
+
+```yaml
+training:
+  base_checkpoint: allenai/longformer-base-4096
+  context_mode: document
+model:
+  kind: hf
+  checkpoint: ../../checkpoints/conll2003/longformer-base-4096
+  max_length: 4096
+```
+
+Every query must have a `doc_id` in document mode. Whole queries are packed by document
+without crossing documents; over-length inputs are split only at complete word
+boundaries.
+
+## Run all CoCoNat analyses
+
+```bash
+coconat run --config data/conll2003/experiment.yaml \
+  --tasks tune,main,ablation,sensitivity,calibration
+```
+
+`tune` searches only the validation split. Its selected `(kappa, delta)` is then used on
+test. Each invocation creates a new timestamped run directory, so prior measurements are
+never overwritten. To execute all eight dataset configurations sequentially:
+
+```bash
+coconat matrix \
+  --configs data/*/experiment.yaml \
+  --tasks tune,main,ablation,sensitivity,calibration
+```
+
+Merge completed dataset runs after checking that the paths are the intended runs:
+
+```bash
+coconat merge --runs outputs/conll/RUN outputs/ontonotes/RUN outputs/wnut/RUN \
+  outputs/fin/RUN outputs/bionlp/RUN outputs/bc5cdr/RUN \
+  outputs/mit_movie/RUN outputs/mit_restaurant/RUN \
+  --output outputs/merged
+```
+
+The merge creates dataset-characteristic, fixed-setting, calibration, baseline, pooled
+length, natural-label, and label-balanced summaries. It refuses unfinished and synthetic
+runs by default.
+
+## Recent baselines
+
+There are three integration paths:
+
+1. Native resident adapters for Hugging Face token classifiers, GLiNER, Flair, and a
+   trained spaCy SpanCategorizer.
+2. A generic local or hosted instruction-LLM adapter using the same indexed-word JSON
+   prompt. Hosted calls require both an environment variable and `--allow-api`.
+3. A strict external-command or prediction-import bridge for official ScdNER,
+   PromptNER, GPT-NER, IRRA, and ReasoningNER implementations.
+
+The third path is deliberate: these systems have distinct training/retrieval/reasoning
+procedures, so relabelling a generic prompt run as an official-method result would be
+invalid. Copy the relevant entries from
+[configs/recent_baselines.example.yaml](configs/recent_baselines.example.yaml), provide a
+concrete source manifest, and enable only integrations that have been installed and
+verified. See [docs/BASELINES.md](docs/BASELINES.md) for the prediction protocol.
+
+Run baseline entries with:
+
+```bash
+coconat run --config data/conll2003/experiment.yaml --tasks baselines
+```
+
+Use `--require-all` in the final reproduction run. It fails if a required method is
+disabled or missing instead of silently producing an incomplete table.
+
+Hosted inference is intentionally opt-in:
+
+```bash
+export OPENAI_API_KEY="..."
+coconat run --config data/conll2003/experiment.yaml \
+  --tasks baselines --allow-api --require-all
+```
+
+API calls may be billable. The key is never accepted in YAML or written to manifests.
+
+## External baseline round trip
+
+Export token-stable, gold-blind inputs:
+
+```bash
+coconat export --config data/conll2003/experiment.yaml \
+  --split test --output external/conll2003-input.jsonl
+```
+
+Convert an official system's BIO, word-offset, character-offset, or generative output:
+
+```bash
+coconat convert-predictions --config data/conll2003/experiment.yaml \
+  --input external/raw-predictions.jsonl --format bio \
+  --output external/predictions.jsonl
+```
+
+The converter requires every prediction row to echo the original token list exactly,
+requires complete ID coverage, and rejects character spans that do not coincide with
+token boundaries. It never snaps output to gold.
+
+## Manual error audit
+
+After all eight main runs, pool the actual C-to-W cases and draw the manuscript sample:
+
+```bash
+coconat audit-export \
+  --cases outputs/*/RUN/main/transition_cases.jsonl \
+  --sample-size 100 --seed 42 --output outputs/manual-c-to-w.csv
+```
+
+Fill the `reason` column with one of the categories recorded in the adjacent manifest,
+then summarize only the annotated rows:
+
+```bash
+coconat audit-summarize --input outputs/manual-c-to-w.csv \
+  --output outputs/manual-c-to-w-summary.json
+```
+
+The software never invents manual labels or percentages.
+
+## Run artifacts
+
+Every run records:
+
+- resolved configuration, environment, model identity, split fingerprints, and status;
+- first/final predictions and exact entity metrics;
+- detector decisions, evidence-group packing traces, and clustering metadata;
+- component timing from three measured runs after one warm-up by default;
+- machine-readable CSV/JSON plus generated LaTeX tables and sensitivity figures;
+- explicit baseline coverage gaps and timing scopes.
+
+Model loading is recorded separately from resident inference. Imported predictions have
+no fabricated latency. External subprocess timing includes process startup and model
+loading and therefore must not be compared to resident-model timing without reporting
+that difference.
+
+## Reproducibility documentation
+
+- [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) maps experiments to commands and output files.
+- [docs/PROTOCOL.md](docs/PROTOCOL.md) defines metrics and edge cases.
+- [docs/BASELINES.md](docs/BASELINES.md) documents baseline integration.
+- [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) describes software verification,
+  required external assets, and measurement limitations.
